@@ -133,15 +133,6 @@ nav.scrolled{background:rgba(12,12,14,.82);backdrop-filter:blur(12px);border-col
   animation:bob 2s ease-in-out infinite}
 @keyframes bob{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,6px)}}
 
-/* marquee */
-.marquee{border-top:1px solid var(--line);border-bottom:1px solid var(--line);
-  padding:1.1rem 0;overflow:hidden;white-space:nowrap;background:var(--bg-2)}
-.marquee-track{display:inline-block;animation:scroll 22s linear infinite}
-.marquee-track span{font-family:'Anton',sans-serif;text-transform:uppercase;font-size:1.4rem;
-  color:var(--ink-2);margin:0 1.5rem;letter-spacing:.02em}
-.marquee-track span b{color:var(--accent);font-weight:400}
-@keyframes scroll{to{transform:translateX(-50%)}}
-
 /* section */
 section{padding:clamp(4rem,9vw,7rem) 0}
 .sec-top{display:flex;align-items:baseline;gap:1.2rem;margin-bottom:3rem;flex-wrap:wrap}
@@ -284,13 +275,6 @@ footer{padding:3rem 0}
   </div>
   <span class="scroll-hint">Scroll</span>
 </header>
-
-<div class="marquee">
-  <div class="marquee-track">
-    <span>Brand <b>◆</b> Email <b>◆</b> Print <b>◆</b> Motion <b>◆</b> Infographics <b>◆</b> Campaigns <b>◆</b> Illustration <b>◆</b> Design Systems <b>◆</b></span>
-    <span>Brand <b>◆</b> Email <b>◆</b> Print <b>◆</b> Motion <b>◆</b> Infographics <b>◆</b> Campaigns <b>◆</b> Illustration <b>◆</b> Design Systems <b>◆</b></span>
-  </div>
-</div>
 
 <div class="over-scrub" id="scrubRide">
 <section id="numbers">
