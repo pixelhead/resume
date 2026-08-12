@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scroll-scrub demo — Torrez</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0C0C0E; --bg-2:#141418; --ink:#F4F2ED; --ink-2:#9B988F;
+  --line:#26262B; --accent:#D6FF3E;
+  --pad:clamp(18px,4vw,56px);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:'Manrope',system-ui,sans-serif;
+  font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.display{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;
+  letter-spacing:.01em;line-height:.9}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:var(--pad)}
+.eyebrow{font-size:.74rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--accent)}
+
+/* fixed scrub stage behind everything */
+.stage{position:fixed;inset:0;z-index:0;background:var(--bg);overflow:hidden;pointer-events:none}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .5s ease}
+.stage canvas.ready{opacity:1}
+.stage .veil{position:absolute;inset:0;
+  background:
+    radial-gradient(90% 80% at 30% 50%,rgba(12,12,14,.55) 0%,rgba(12,12,14,.2) 55%,rgba(12,12,14,.35) 100%),
+    linear-gradient(180deg,rgba(12,12,14,.45) 0%,rgba(12,12,14,.15) 30%,rgba(12,12,14,.5) 100%)}
+.loading{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-2);
+  transition:opacity .4s}
+.loading.gone{opacity:0}
+
+/* content layer */
+.content{position:relative;z-index:10}
+
+/* progress rail */
+.rail{position:fixed;left:var(--pad);top:0;bottom:0;width:2px;z-index:20;
+  background:rgba(255,255,255,.08)}
+.rail .fill{position:absolute;top:0;left:0;right:0;height:0;background:var(--accent)}
+.pct{position:fixed;left:calc(var(--pad) + 14px);z-index:20;top:0;
+  font-family:'Anton',sans-serif;font-size:.8rem;color:var(--accent);
+  transform:translateY(-50%)}
+
+/* glass panel language */
+.panel{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);
+  backdrop-filter:blur(10px);border-radius:16px}
+.badge{display:inline-block;border-left:2px solid var(--accent);
+  background:rgba(255,255,255,.08);backdrop-filter:blur(8px);
+  padding:.4rem .8rem;font-size:.68rem;font-weight:700;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--ink)}
+
+/* panes */
+.pane{min-height:100vh;display:flex;flex-direction:column;justify-content:space-between;
+  padding-top:clamp(4rem,10vh,7rem);padding-bottom:clamp(2rem,6vh,4rem)}
+.pane .top{display:flex;justify-content:space-between;gap:2rem;flex-wrap:wrap}
+.pane .top .svc{display:flex;flex-direction:column;gap:.4rem;
+  font-family:'Manrope';font-size:.72rem;font-weight:700;letter-spacing:.15em;
+  text-transform:uppercase;color:rgba(244,242,237,.9);text-shadow:0 2px 8px rgba(0,0,0,.5)}
+.pane .top .intro{max-width:34ch;text-align:right;font-size:1.1rem;color:var(--ink);
+  text-shadow:0 2px 10px rgba(0,0,0,.5)}
+.pane .btm{display:flex;justify-content:space-between;align-items:flex-end;gap:2rem;flex-wrap:wrap}
+.pane h1,.pane h2{font-size:clamp(3rem,9vw,7rem);color:var(--ink);
+  text-shadow:0 4px 24px rgba(0,0,0,.55);margin-top:1rem}
+.pane .lede{max-width:40ch;color:rgba(244,242,237,.82);font-size:1rem;margin-top:1.2rem;
+  text-shadow:0 2px 10px rgba(0,0,0,.5)}
+.cta-row{display:flex;gap:.8rem;flex-wrap:wrap;margin-top:1.6rem}
+.btn{display:inline-flex;align-items:center;gap:.4rem;font-weight:700;font-size:.9rem;
+  padding:.85rem 1.5rem;border-radius:100px;transition:transform .2s,background .2s}
+.btn-fill{background:var(--accent);color:#0C0C0E}.btn-fill:hover{transform:translateY(-2px)}
+.btn-glass{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);
+  backdrop-filter:blur(8px);color:var(--ink)}.btn-glass:hover{background:rgba(255,255,255,.16)}
+
+/* spacer that gives the scrub room between panes */
+.spacer{height:90vh}
+
+/* spec panel (section two right side) */
+.spec{width:100%;max-width:420px;padding:.4rem 1.4rem}
+.spec .row{display:flex;gap:1.2rem;padding:1.2rem 0;border-bottom:1px solid rgba(255,255,255,.12)}
+.spec .row:last-child{border-bottom:0}
+.spec .n{font-family:'Anton',sans-serif;font-size:.9rem;color:var(--accent)}
+.spec .r h4{font-size:1.05rem;font-weight:700}
+.spec .r p{font-size:.85rem;color:rgba(244,242,237,.7);margin-top:.3rem}
+
+/* reveal */
+.rev{opacity:0;transform:translateY(28px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
+.rev.in{opacity:1;transform:none}
+
+/* dev note bar */
+.note{position:fixed;right:var(--pad);bottom:1rem;z-index:30;max-width:280px;
+  font-size:.72rem;color:var(--ink-2);background:rgba(20,20,24,.85);
+  border:1px solid var(--line);border-radius:10px;padding:.7rem .9rem;backdrop-filter:blur(8px)}
+.note b{color:var(--accent);font-weight:700}
+
+@media(max-width:760px){
+  .pane .top .intro{text-align:left}
+  .rail,.pct{display:none}
+  .note{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .rev{opacity:1;transform:none}
+  .stage canvas{transition:none}
+}
+</style>
+</head>
+<body>
+
+<!-- fixed scrub stage -->
+<div class="stage" aria-hidden="true">
+  <canvas id="scrub"></canvas>
+  <div class="veil"></div>
+  <div class="loading" id="loading">Caching frames…</div>
+</div>
+
+<!-- progress rail -->
+<div class="rail"><div class="fill" id="railFill"></div></div>
+<div class="pct" id="pct">0</div>
+
+<div class="content">
+
+  <!-- PANE 1 -->
+  <section class="pane wrap">
+    <div class="top">
+      <div class="svc rev">
+        <span>/ Golf branding</span>
+        <span>/ Product design</span>
+        <span>/ Campaign direction</span>
+      </div>
+      <p class="intro rev" style="transition-delay:.15s">A single iron, turned slowly in the light — every angle of the cavity-back on display as you scroll.</p>
+    </div>
+    <div class="btm">
+      <div>
+        <span class="badge rev">Hero product · No. 3 iron</span>
+        <h1 class="display rev" style="transition-delay:.12s">Turn it<br>over.</h1>
+      </div>
+      <div class="panel rev" style="transition-delay:.25s;padding:1rem 1.3rem;max-width:300px">
+        <p style="font-size:.85rem;color:rgba(244,242,237,.85)">Scroll down to rotate the club head. Scroll up to reverse it. The video timeline is mapped to your scroll position.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="spacer"></div>
+
+  <!-- PANE 2 -->
+  <section class="pane wrap">
+    <div class="top">
+      <span class="badge rev">Built to spec</span>
+      <p class="intro rev" style="transition-delay:.1s">Brushed stainless, cavity-back geometry, unbranded and clean — shot to hold up frame by frame.</p>
+    </div>
+    <div class="btm">
+      <div style="max-width:36rem">
+        <h2 class="display rev">See every<br>angle.</h2>
+        <p class="lede rev" style="transition-delay:.15s">From toe to heel, the scrub keeps the object continuous — no cuts, no reset. The motion is the reveal.</p>
+        <div class="cta-row rev" style="transition-delay:.25s">
+          <a class="btn btn-fill" href="#">View the shop →</a>
+          <a class="btn btn-glass" href="#">See the range</a>
+        </div>
+      </div>
+      <div class="spec panel rev" style="transition-delay:.2s">
+        <div class="row"><span class="n">01</span><div class="r"><h4>Continuous motion</h4><p>Slow rotation reads cleanly at any scroll speed.</p></div></div>
+        <div class="row"><span class="n">02</span><div class="r"><h4>Cached frames</h4><p>Frames are pre-decoded so scrubbing stays smooth.</p></div></div>
+        <div class="row"><span class="n">03</span><div class="r"><h4>Reversible</h4><p>Scroll up and the club turns back — no snap.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="spacer"></div>
+
+  <!-- PANE 3 -->
+  <section class="pane wrap" style="justify-content:center;text-align:center;align-items:center">
+    <div>
+      <span class="badge rev">End of scrub</span>
+      <h2 class="display rev" style="transition-delay:.1s;font-size:clamp(2.6rem,7vw,5.5rem)">Ready for<br>real footage.</h2>
+      <p class="lede rev" style="transition-delay:.2s;margin-inline:auto;text-align:center">Swap the synthetic frames for a rendered club-head clip and this becomes a signature hero.</p>
+    </div>
+  </section>
+
+</div>
+
+<div class="note">
+  <b>Demo mode:</b> frames are drawn on-canvas (synthetic club head). Drop in a real <code>.mp4</code> and the same scrubber plays it. Resize/scroll to test.
+</div>
+
+<script>
+/* ============================================================
+   SCROLL-SCRUB ENGINE
+   - progress = scrollY / (scrollHeight - innerHeight), clamped
+   - lerp smoothing toward target
+   - object-cover draw math (center crop)
+   - frame cache: here we synthesize frames; with real video you
+     extract frames from an offscreen <video> the same way.
+   ============================================================ */
+
+const canvas = document.getElementById('scrub');
+const ctx = canvas.getContext('2d');
+const loadingEl = document.getElementById('loading');
+const railFill = document.getElementById('railFill');
+const pctEl = document.getElementById('pct');
+
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+const FRAME_COUNT = 90;      // matches the reference (up to 90 cached frames)
+const SRC_W = 960, SRC_H = 540; // source frame size, 16:9, max-width 960
+let frames = [];            // ImageBitmap or offscreen canvases
+let ready = false;
+let target = 0, smoothed = 0;
+
+/* ---- size the visible canvas to viewport * DPR ---- */
+function sizeCanvas(){
+  canvas.width = Math.round(window.innerWidth * DPR);
+  canvas.height = Math.round(window.innerHeight * DPR);
+}
+sizeCanvas();
+window.addEventListener('resize', ()=>{ sizeCanvas(); draw(true); });
+
+/* ---- object-cover draw: fill viewport, center-crop the frame ---- */
+function drawCover(bitmap){
+  const cw = canvas.width, ch = canvas.height;
+  const iw = bitmap.width, ih = bitmap.height;
+  const scale = Math.max(cw/iw, ch/ih);
+  const w = iw*scale, h = ih*scale;
+  const x = (cw - w)/2, y = (ch - h)/2;
+  ctx.clearRect(0,0,cw,ch);
+  ctx.drawImage(bitmap, x, y, w, h);
+}
+
+/* ============================================================
+   SYNTHETIC FRAME GENERATOR (demo stand-in for real footage)
+   Renders a stylized cavity-back club head rotating on Y axis.
+   Each frame is an offscreen canvas at SRC_W x SRC_H.
+   ============================================================ */
+function makeFrame(t){ // t: 0..1 rotation progress
+  const c = document.createElement('canvas');
+  c.width = SRC_W; c.height = SRC_H;
+  const g = c.getContext('2d');
+
+  // background: soft studio gradient
+  const bg = g.createRadialGradient(SRC_W*0.4, SRC_H*0.45, 40, SRC_W*0.5, SRC_H*0.5, SRC_W*0.75);
+  bg.addColorStop(0, '#1c1c22');
+  bg.addColorStop(1, '#0c0c0e');
+  g.fillStyle = bg; g.fillRect(0,0,SRC_W,SRC_H);
+
+  // floor reflection band
+  g.fillStyle = 'rgba(255,255,255,0.02)';
+  g.fillRect(0, SRC_H*0.68, SRC_W, SRC_H*0.32);
+
+  const cx = SRC_W/2, cy = SRC_H/2;
+  const angle = t * Math.PI * 2;              // full rotation across scroll
+  const face = Math.cos(angle);              // -1..1, how face-on we are
+  const widthScale = 0.28 + Math.abs(face)*0.72; // narrows when edge-on
+
+  g.save();
+  g.translate(cx, cy);
+
+  // shadow
+  g.save();
+  g.scale(1, 0.28);
+  g.beginPath();
+  g.ellipse(0, SRC_H*0.62, 150*widthScale, 60, 0, 0, Math.PI*2);
+  g.fillStyle='rgba(0,0,0,0.5)'; g.fill();
+  g.restore();
+
+  // club head body (rounded blade / cavity-back silhouette)
+  const bodyW = 260*widthScale, bodyH = 150;
+  const grad = g.createLinearGradient(-bodyW/2, -bodyH/2, bodyW/2, bodyH/2);
+  // brushed stainless: light shifts with rotation
+  const lift = (face+1)/2; // 0..1
+  grad.addColorStop(0, `rgba(${180+lift*50},${182+lift*50},${188+lift*50},1)`);
+  grad.addColorStop(0.45, `rgba(${120+lift*40},${124+lift*40},${132+lift*40},1)`);
+  grad.addColorStop(0.55, `rgba(${150+lift*45},${153+lift*45},${160+lift*45},1)`);
+  grad.addColorStop(1, `rgba(${70+lift*30},${73+lift*30},${80+lift*30},1)`);
+
+  roundRect(g, -bodyW/2, -bodyH/2, bodyW, bodyH, 26+18*widthScale);
+  g.fillStyle = grad; g.fill();
+
+  // top edge highlight
+  g.strokeStyle = `rgba(255,255,255,${0.15+lift*0.35})`;
+  g.lineWidth = 3; g.stroke();
+
+  // hosel (neck) rising from heel
+  g.beginPath();
+  g.moveTo(-bodyW*0.34, -bodyH*0.3);
+  g.lineTo(-bodyW*0.34 - 10*face, -bodyH*1.6);
+  g.lineTo(-bodyW*0.34 + 18, -bodyH*1.6);
+  g.lineTo(-bodyW*0.34 + 14, -bodyH*0.3);
+  g.closePath();
+  g.fillStyle = grad; g.fill(); g.stroke();
+
+  // cavity (only visible on the back-ish side)
+  if(face < 0.2){
+    const cavity = Math.min(1, (0.2 - face)/1.2);
+    g.save();
+    roundRect(g, -bodyW*0.32, -bodyH*0.28, bodyW*0.64, bodyH*0.56, 16);
+    g.fillStyle = `rgba(20,22,28,${0.35+cavity*0.5})`; g.fill();
+    g.restore();
+  }
+
+  // face grooves (only visible on the front-ish side)
+  if(face > 0.15){
+    const show = Math.min(1, (face-0.15)/0.8);
+    g.save();
+    g.globalAlpha = show*0.55;
+    g.strokeStyle = 'rgba(30,32,38,0.9)';
+    g.lineWidth = 2;
+    for(let i=-4;i<=4;i++){
+      const gy = i*13;
+      g.beginPath();
+      g.moveTo(-bodyW*0.30, gy);
+      g.lineTo(bodyW*0.30, gy);
+      g.stroke();
+    }
+    g.restore();
+  }
+
+  // moving specular streak (brushed metal catching light)
+  g.save();
+  g.globalCompositeOperation = 'lighter';
+  const sx = Math.sin(angle*2) * bodyW*0.3;
+  const sg = g.createLinearGradient(sx-40,0,sx+40,0);
+  sg.addColorStop(0,'rgba(255,255,255,0)');
+  sg.addColorStop(0.5,`rgba(255,255,255,${0.12+lift*0.18})`);
+  sg.addColorStop(1,'rgba(255,255,255,0)');
+  roundRect(g, -bodyW/2, -bodyH/2, bodyW, bodyH, 26);
+  g.clip();
+  g.fillStyle = sg;
+  g.fillRect(-bodyW/2, -bodyH/2, bodyW, bodyH);
+  g.restore();
+
+  g.restore();
+  return c;
+}
+
+function roundRect(g,x,y,w,h,r){
+  g.beginPath();
+  g.moveTo(x+r,y);
+  g.arcTo(x+w,y,x+w,y+h,r);
+  g.arcTo(x+w,y+h,x,y+h,r);
+  g.arcTo(x,y+h,x,y,r);
+  g.arcTo(x,y,x+w,y,r);
+  g.closePath();
+}
+
+/* ---- build the cache (chunked so we don't block the main thread) ---- */
+function buildFrames(){
+  let i = 0;
+  function chunk(){
+    const end = Math.min(i+10, FRAME_COUNT);
+    for(; i<end; i++){ frames.push(makeFrame(i/(FRAME_COUNT-1))); }
+    loadingEl.textContent = `Caching frames… ${Math.round(i/FRAME_COUNT*100)}%`;
+    if(i < FRAME_COUNT){ requestAnimationFrame(chunk); }
+    else {
+      ready = true;
+      canvas.classList.add('ready');
+      loadingEl.classList.add('gone');
+      draw(true);
+    }
+  }
+  requestAnimationFrame(chunk);
+}
+
+/* ---- scroll -> target progress ---- */
+function updateTarget(){
+  const max = document.documentElement.scrollHeight - window.innerHeight;
+  target = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+}
+window.addEventListener('scroll', updateTarget, {passive:true});
+updateTarget();
+
+/* ---- draw loop with lerp smoothing ---- */
+function draw(force){
+  if(ready){
+    if(force){ smoothed = target; }
+    else { smoothed += (target - smoothed) * 0.12; }
+    const idx = Math.min(FRAME_COUNT-1, Math.round(smoothed*(FRAME_COUNT-1)));
+    drawCover(frames[idx]);
+  }
+  // UI rail
+  railFill.style.height = (smoothed*100).toFixed(1) + '%';
+  pctEl.style.top = (smoothed*100).toFixed(1) + 'vh';
+  pctEl.textContent = Math.round(smoothed*100);
+  requestAnimationFrame(()=>draw(false));
+}
+
+/* reduced motion: jump straight to frame, no rAF smoothing loop needed
+   but we still run rAF for scroll tracking; lerp factor set to 1 */
+if(matchMedia('(prefers-reduced-motion: reduce)').matches){
+  // override smoothing to snap
+  const origDraw = draw;
+}
+
+buildFrames();
+draw(true);
+
+/* ---- reveal observer ---- */
+const io = new IntersectionObserver((es)=>{
+  es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+},{threshold:.15});
+document.querySelectorAll('.rev').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>
