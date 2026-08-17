@@ -57,7 +57,7 @@ button{font-family:inherit}
 
 /* size tiers — only apply in the "All" view (body.filtered strips them) */
 .gitem.hero{grid-column:span 2;grid-row:span 2}
-.gitem.feat{grid-column:span 2;grid-row:span 1}
+.gitem.wide{grid-column:span 2;grid-row:span 1}
 .gitem.tall{grid-column:span 1;grid-row:span 2}
 /* std = 1x1 default */
 
@@ -71,12 +71,12 @@ body.filtered .gitem{grid-column:span 1 !important;grid-row:span 1 !important}
 .gitem .ov .t{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
 .gitem .ov h4{font-size:1rem;font-weight:700;margin-top:.15rem}
 .gitem.hero .ov h4{font-size:1.5rem}
-.gitem.feat .ov h4{font-size:1.2rem}
+.gitem.wide .ov h4{font-size:1.2rem}
 .gitem .ov .desc{color:var(--ink-2);font-size:.82rem;margin-top:.35rem;max-width:42ch;display:none}
 /* description only shows on the big tiles, and only in All view */
-.gitem.hero .ov .desc,.gitem.feat .ov .desc{display:block}
+.gitem.hero .ov .desc,.gitem.wide .ov .desc{display:block}
 body.filtered .gitem .ov .desc{display:none}
-body.filtered .gitem.hero .ov h4,body.filtered .gitem.feat .ov h4{font-size:1rem}
+body.filtered .gitem.hero .ov h4,body.filtered .gitem.wide .ov h4{font-size:1rem}
 
 .gitem .badge{position:absolute;top:.7rem;right:.7rem;width:36px;height:36px;border-radius:50%;
   background:rgba(12,12,14,.7);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;
@@ -101,16 +101,35 @@ body.filtered .gitem.hero .ov h4,body.filtered .gitem.feat .ov h4{font-size:1rem
   font-size:1.3rem;display:flex;align-items:center;justify-content:center;transition:.2s}
 .lb-nav:hover{background:var(--accent);color:#0C0C0E;border-color:var(--accent)}
 .lb-prev{left:-1rem}.lb-next{right:-1rem}
+/* hide arrows when a project has only one media item */
+.lb.single .lb-nav{display:none}
+/* per-project position counter */
+.lb-count{position:absolute;top:-2.55rem;left:0;font-size:.8rem;font-weight:700;
+  letter-spacing:.05em;color:var(--ink-2)}
+.lb-count b{color:var(--accent);font-weight:700}
+/* a link rendered as a slide: poster with an Open button over it */
+.lb-linkslide{position:relative;display:inline-block;max-width:100%}
+.lb-linkslide img{max-height:80vh}
+.lb-open{position:absolute;left:50%;bottom:1.2rem;transform:translateX(-50%);
+  display:inline-flex;align-items:center;gap:.45rem;font-weight:700;font-size:.9rem;
+  padding:.85rem 1.6rem;border-radius:100px;background:var(--accent);color:#0C0C0E;
+  text-decoration:none;transition:transform .2s}
+.lb-open:hover{transform:translateX(-50%) translateY(-2px)}
+
+/* count badge on the tile — reuses the badge chip, sits pill-shaped */
+.gitem .badge.count{width:auto;min-width:36px;padding:0 .6rem;gap:.2rem;
+  font-family:'Manrope',sans-serif;font-weight:700;font-size:.8rem}
+.gitem .badge.count svg{width:13px;height:13px;display:block}
 
 @media(max-width:1000px){
   .gallery{grid-template-columns:repeat(2,1fr)}
   .gitem.hero{grid-column:span 2;grid-row:span 2}
-  .gitem.feat{grid-column:span 2;grid-row:span 1}
+  .gitem.wide{grid-column:span 2;grid-row:span 1}
   .gitem.tall{grid-column:span 1;grid-row:span 2}
 }
 @media(max-width:560px){
   .gallery{grid-template-columns:1fr;grid-auto-rows:200px}
-  .gitem.hero,.gitem.feat,.gitem.tall{grid-column:span 1;grid-row:span 1}
+  .gitem.hero,.gitem.wide,.gitem.tall{grid-column:span 1;grid-row:span 1}
   .lb-prev{left:.3rem}.lb-next{right:.3rem}.lb-close{top:-2.4rem}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -154,49 +173,285 @@ body.filtered .gitem.hero .ov h4,body.filtered .gitem.feat .ov h4{font-size:1rem
 <script>
 /* ---------------------------------------------------------------
    PROJECT LIST
-   tier: 'hero' (2x2) | 'feat' (2x1) | 'tall' (1x2) | 'std' (1x1)
-   desc: shown only on hero/feat tiles, in the "All" view
-   To add your 10 new items: copy any line below, drop in the new
-   img / title / tag / cat, and set a tier. That's it.
+   tier: 'hero' (2x2) | 'wide' (2x1) | 'tall' (1x2) | 'std' (1x1)
+   desc: shown only on hero/wide tiles, in the "All" view
+   Every tile declares its click behavior inline in `media`.
+   Single image = large lightbox image; multiple items = lightbox array;
+   single link = opens the external URL; image/video arrays can be mixed.
 ---------------------------------------------------------------- */
 const PROJECTS=[
-  {img:'img/Employee_Appreciation_final.jpg', src:'video/Employee_Appreciation_final.mp4', title:'Employee Appreciation', tag:'Premiere · Audition', cat:'motion', type:'video', tier:'hero', desc:'Video piece celebrating the team — editing, sound design, and motion.'},
-  {img:'img/mock_1.jpg',        title:'Concept illustration I',   tag:'Photoshop · Procreate', cat:'illustration', type:'image', tier:'std'},
-  {img:'img/mock_2.jpg',        title:'Concept illustration II',  tag:'Photoshop · Procreate', cat:'illustration', type:'image', tier:'tall'},
-  {img:'img/Alice.jpg',         src:'video/alice_web.mp4',        title:'Alice',                tag:'Unity3D App',           cat:'motion',       type:'video', tier:'feat', desc:'Interactive Unity3D application — real-time motion and UI.'},
-  {img:'img/mock_4.jpg',        title:'Concept illustration III', tag:'Photoshop · Procreate', cat:'illustration', type:'image', tier:'std'},
-  {img:'img/bloodknight.jpg',   title:'Blood Knight',             tag:'Photoshop · Procreate', cat:'illustration', type:'image', tier:'tall'},
-  {img:'img/Gallery.jpg',       link:'https://employeeanniversarygallery.s3.amazonaws.com/AG2020/index.html', title:'Anniversary Gallery', tag:'Unity3D Gallery', cat:'interactive', type:'link', tier:'feat', desc:'Interactive 3D anniversary gallery, shipped to the web.'},
-  {img:'img/nec.jpg',           title:'Character study',          tag:'Photoshop · Procreate', cat:'illustration', type:'image', tier:'std'},
-  {img:'img/mcclintock_band_tee.jpg', title:'McClintock HS Band Tees', tag:'Photoshop', cat:'apparel', type:'image', tier:'feat', desc:'Apparel design for the McClintock High School band, shown on garment.'},
-  {img:'img/ai_learning_tools.jpg', src:'video/ai_learning_tools.mp4', title:'AI Learning Tools', tag:'Premiere · AI tools', cat:'motion', type:'video', tier:'std'},
-  {img:'img/spider.jpg',        title:'Spider sculpt',            tag:'ZBrush · Photoshop',    cat:'3d',           type:'image', tier:'std'},
-  {img:'img/uopx_payment.jpg',  link:'#', title:'UOPX Training: Payment', tag:'Storyline · Photoshop', cat:'interactive', type:'link', tier:'std'},
-  {img:'img/uopx_military.jpg', link:'#', title:'UOPX Training: Military Culture', tag:'Storyline · Photoshop', cat:'interactive', type:'link', tier:'std'},
-  {img:'img/HollowKnight1.jpg', title:'Hollow Knight I',          tag:'ZBrush · Photoshop',    cat:'3d',           type:'image', tier:'tall'},
-  {img:'img/11-GAndR-1_beta.jpg', src:'video/11-GAndR-1Beta_final.mp4', title:'G&R Animation', tag:'Animate · Illustrator', cat:'motion', type:'video', tier:'feat', desc:'Character animation built in Animate from Illustrator artwork.'},
-  {img:'img/HollowKnight2.jpg', title:'Hollow Knight II',         tag:'ZBrush',                cat:'3d',           type:'image', tier:'std'},
-  {img:'img/AndrewJohnson.jpg', src:'video/17_Andrew Johnson_twitter.mp4', title:'Andrew Johnson', tag:'Photoshop · Spine 2D', cat:'motion', type:'video', tier:'std'},
-  {img:'img/wizard.jpg',        title:'Wizard',                   tag:'Photoshop · Procreate', cat:'illustration', type:'image', tier:'std'},
-  {img:'img/Crest_large.jpg',   title:'Crest',                    tag:'ZBrush',                cat:'3d',           type:'image', tier:'tall'},
-  {img:'img/WoodrowWilson.jpg', src:'video/28_Woodrow_Wilson_twitter.mp4', title:'Woodrow Wilson', tag:'Photoshop · Spine 2D', cat:'motion', type:'video', tier:'std'},
-  {img:'img/animation_ai.jpg',  src:'video/animation_ai.mp4', title:'Animation', tag:'AI tools', cat:'motion', type:'video', tier:'std'},
-  {img:'img/uopx_omva.jpg',     link:'#', title:'UOPX Training: OMVA', tag:'Storyline · Photoshop', cat:'interactive', type:'link', tier:'std'},
-  {img:'img/tugboat.jpg',       src:'video/tugboat.mp4', title:'Animation: Tug Boat', tag:'Spine 2D', cat:'motion', type:'video', tier:'tall'},
-  {img:'img/uopx_disburse.jpg', link:'#', title:'UOPX Training: Ready to Disburse', tag:'Storyline · Photoshop', cat:'interactive', type:'link', tier:'std'},
-  {img:'img/Rouge.jpg',         title:'Rouge',                    tag:'Photoshop · Procreate', cat:'illustration', type:'image', tier:'std'},
-  {img:'img/MM.ja.jpg',         link:'img/MM.ja.pdf',             title:'Editorial layout',     tag:'InDesign',              cat:'print',        type:'link', tier:'feat', desc:'Multi-page editorial composition and layout in InDesign.'},
-  {img:'img/unseen.jpg',        title:'Unseen',                   tag:'Photoshop',             cat:'illustration', type:'image', tier:'std'},
-  {img:'img/003Honeycomb.jpg',  link:'https://sketchfab.com/3d-models/003-honeycomb-4bddba892c114120ae0941d0c2cf0c52', title:'Honeycomb', tag:'3ds Max · Sketchfab', cat:'interactive', type:'link', tier:'std'},
-  {img:'img/Accreditation.jpg', link:'extra_web/UOPX_Accreditation/story_html5.html', title:'UOPX Accreditation', tag:'Storyline 360 · Audition', cat:'interactive', type:'link', tier:'std'}
+  {
+    img:'img/Employee_Appreciation_final.jpg',
+    title:'Project 01', tag:'Image · Video', cat:'motion', tier:'hero', desc:'Placeholder project — replace thumbnail and media paths with your final assets.',
+    media:[
+      {type:'image', src:'support_images/Employeeappreciation.png'},
+      {type:'video', src:'video/project_01.mp4', poster:'img/project_01_thumb.jpg'}
+    ]
+  },
+  {
+    img:'img/golf.png',
+    title:'Project 02', tag:'External Link', cat:'interactive', tier:'std',
+    media:[
+      {type:'link', href:'https://example.com/project-02', poster:'img/project_02_thumb.jpg', label:'Open Project ↗'}
+    ]
+  },
+  {
+    img:'img/unseen.jpg',
+    title:'Project 03', tag:'Image', cat:'illustration', tier:'std',
+    media:[
+      {type:'image', src:'img/unseen.jpg'}
+    ]
+  },
+  {
+    img:'img/stakeboard.jpg',
+    title:'Project 04', tag:'3 Images', cat:'illustration', tier:'tall',
+    media:[
+      {type:'image', src:'support_images/skate1.png'},
+      {type:'image', src:'support_images/skate2.png'},
+      {type:'image', src:'support_images/skate3.png'}
+    ]
+  },
+  {
+    img:'img/milestone.jpg',
+    title:'Project 05', tag:'Image · Video', cat:'motion', tier:'wide', desc:'Placeholder project — replace thumbnail and media paths with your final assets.',
+    media:[
+      {type:'image', src:'support_images/milestoneevent.png'},
+      {type:'video', src:'video/project_05.mp4', poster:'img/project_05_thumb.jpg'}
+    ]
+  },
+  {
+    img:'img/nec.jpg',
+    title:'Project 06', tag:'Image', cat:'illustration', tier:'tall',
+    media:[
+      {type:'image', src:'img/nec.jpg'}
+    ]
+  },
+  {
+    img:'img/car.png',
+    title:'Project 07', tag:'Image', cat:'illustration', tier:'std',
+    media:[
+      {type:'link', href:'https://example.com/project-02', poster:'img/project_02_thumb.jpg', label:'Open Project ↗'}
+    ]
+  },
+  {
+    img:'img/OMVA.png',
+    title:'Project 08', tag:'External Link', cat:'interactive', tier:'std',
+    media:[
+      {type:'image', src:'support_images/OMVA.png'},
+      {type:'video', src:'video/project_05.mp4', poster:'img/project_05_thumb.jpg'}
+    ]
+  },
+  {
+    img:'img/designsystem_thum.png',
+    title:'Project 09', tag:'Image', cat:'illustration', tier:'wide', desc:'Placeholder project — replace thumbnail and media paths with your final assets.',
+    media:[
+      {type:'image', src:'support_images/designsystem.png'}
+    ]
+  },
+  {
+    img:'img/alice.jpg',
+    title:'Project 10', tag:'Image · Video', cat:'motion', tier:'wide', desc:'Placeholder project — replace thumbnail and media paths with your final assets.',
+    media:[
+      {type:'image', src:'support_images/alice.jpg'},
+      {type:'video', src:'video/project_10.mp4', poster:'img/project_10_thumb.jpg'}
+    ]
+  },
+  {
+    img:'img/Tug_boat.jpg',
+    title:'Project 11', tag:'Image · Video', cat:'motion', tier:'std',
+    media:[
+      {type:'image', src:'support_images/animation.png'},
+      {type:'video', src:'video/project_11.mp4', poster:'img/project_11_thumb.jpg'}
+    ]
+  },
+  {
+    img:'img/HollowKnight1.jpg',
+    title:'Project 12', tag:'Image', cat:'illustration', tier:'std',
+    media:[
+      {type:'image', src:'img/HollowKnight1.jpg'}
+    ]
+  },
+  {
+    img:'img/OMVA.png',
+    title:'Project 13', tag:'Image', cat:'illustration', tier:'std',
+    media:[
+      {type:'image', src:'support_images/project_13.jpg'}
+    ]
+  },
+  {
+    img:'img/AndrewJohnson.jpg',
+    title:'Project 14', tag:'Image · Video', cat:'motion', tier:'std',
+    media:[
+      {type:'image', src:'support_images/project_14_1.jpg'},
+      {type:'video', src:'video/project_14.mp4', poster:'img/project_14_thumb.jpg'}
+    ]
+  },
+  {
+    img:'img/band.jpg',
+    title:'Project 15', tag:'Image', cat:'illustration', tier:'tall',
+    media:[
+      {type:'image', src:'support_images/band.png'}
+    ]
+  },
+  {
+    img:'img/RTBD.jpg',
+    title:'Project 16', tag:'Image · Video', cat:'motion', tier:'wide', desc:'Placeholder project — replace thumbnail and media paths with your final assets.',
+    media:[
+      {type:'image', src:'support_images/financial.png'},
+      {type:'video', src:'video/project_16.mp4', poster:'img/project_16_thumb.jpg'}
+    ]
+  },
+  {
+    img:'img/MSAN.jpg',
+    title:'Project 17', tag:'Image · Video', cat:'motion', tier:'std',
+    media:[
+      {type:'image', src:'support_images/MSAN.png'},
+      {type:'video', src:'video/project_17.mp4', poster:'img/project_17_thumb.jpg'}
+    ]
+  },
+  {
+    img:'img/wizard.jpg',
+    title:'Project 18', tag:'Image · Video', cat:'motion', tier:'std',
+    media:[
+      {type:'image', src:'img/wizard.jpg'}
+ 
+    ]
+  },
+  {
+    img:'img/Transistor.jpg',
+    title:'Project 19', tag:'Image', cat:'illustration', tier:'std',
+    media:[
+      {type:'image', src:'img/Transistor.jpg'}
+    ]
+  },
+  {
+    img:'img/hades.jpg',
+    title:'Project 20', tag:'Image', cat:'illustration', tier:'tall',
+    media:[
+      {type:'image', src:'img/hades.jpg'}
+    ]
+  },
+  {
+    img:'img/slik.jpg',
+    title:'Project 21', tag:'Image · Video', cat:'motion', tier:'std',
+    media:[
+      {type:'image', src:'support_images/stikers.jpg'},
+    ]
+  },
+  {
+    img:'img/Crest.jpg',
+    title:'Project 22', tag:'Image · Video', cat:'motion', tier:'std',
+    media:[
+      {type:'image', src:'support_images/project_22_1.jpg'},
+      {type:'video', src:'video/project_22.mp4', poster:'img/project_22_thumb.jpg'}
+    ]
+  },
+  {
+    img:'img/Accreditation.jpg',
+    title:'Project 23', tag:'Image · Video', cat:'motion', tier:'std',
+    media:[
+      {type:'image', src:'support_images/accreditation.png'},
+      {type:'video', src:'video/project_23.mp4', poster:'img/project_23_thumb.jpg'}
+    ]
+  },
+  {
+    img:'img/PFI.png',
+    title:'Project 24', tag:'Image · Video', cat:'motion', tier:'tall',
+    media:[
+      {type:'image', src:'support_images/project_24_1.jpg'},
+      {type:'video', src:'video/project_24.mp4', poster:'img/project_24_thumb.jpg'}
+    ]
+  },
+  {
+    img:'img/student_story.jpg',
+    title:'Project 25', tag:'3 Images', cat:'illustration', tier:'std',
+    media:[
+      {type:'image', src:'support_images/project_25_1.jpg'},
+      {type:'image', src:'support_images/project_25_2.jpg'},
+      {type:'image', src:'support_images/project_25_3.jpg'}
+    ]
+  },
+  {
+    img:'img/tytoswift_b.jpg',
+    title:'Project 26', tag:'Image', cat:'illustration', tier:'std',
+    media:[
+      {type:'image', src:'img/tytoswift.png'}
+    ]
+  },
+  {
+    img:'img/military_culture.jpg',
+    title:'Project 27', tag:'Image', cat:'illustration', tier:'std',
+    media:[
+      {type:'image', src:'support_images/militaryculture.png'}
+    ]
+  },
+  {
+    img:'img/Gallery.jpg',
+    title:'Project 28', tag:'Image · Video', cat:'motion', tier:'wide', desc:'Placeholder project — replace thumbnail and media paths with your final assets.',
+    media:[
+      {type:'image', src:'support_images/2020_milestone.jpg'},
+      {type:'video', src:'video/project_28.mp4', poster:'img/project_28_thumb.jpg'}
+    ]
+  },
+  {
+    img:'img/mirror.png',
+    title:'Project 29', tag:'Image · Video', cat:'motion', tier:'std',
+    media:[
+      {type:'image', src:'support_images/mirrior.png'},
+      {type:'video', src:'video/project_29.mp4', poster:'img/project_29_thumb.jpg'}
+    ]
+  },
+  {
+    img:'img/003Honeycomb.jpg',
+    title:'Project 30', tag:'Image · Video', cat:'motion', tier:'std',
+    media:[
+       {type:'link', href:'https://sketchfab.com/3d-models/003-honeycomb-4bddba892c114120ae0941d0c2cf0c52', poster:'img/project_02_thumb.jpg', label:'Open Project ↗'}
+    ]
+  },
+  {
+    img:'img/spider.jpg',
+    title:'Project 31', tag:'Image · Video', cat:'motion', tier:'std', desc:'Placeholder project — replace thumbnail and media paths with your final assets.',
+    media:[
+      {type:'image', src:'img/spider.jpg'}
+    ]
+  }
 ];
 
+/* ---------------------------------------------------------------
+   MEDIA NORMALIZER
+   Every project ends up with a `media` array of {type,src?,href?,poster?,label?}.
+   - If a project already declares `media`, it's used as-is.
+   - Otherwise one item is built from the legacy img/src/link fields,
+     so all existing projects keep working with zero changes.
+   To make a mini-gallery, add a `media` array to that project — e.g.
+     media:[
+       {type:'image', src:'support_images/spider_1.jpg'},
+       {type:'image', src:'support_images/spider_2.jpg'},
+       {type:'video', src:'video/spider_turn.mp4'},
+       {type:'link',  href:'https://…', poster:'support_images/x.jpg', label:'View 3D model'}
+     ]
+---------------------------------------------------------------- */
+PROJECTS.forEach(p=>{
+  if(Array.isArray(p.media)&&p.media.length)return;
+  if(p.type==='video')     p.media=[{type:'video', src:p.src, poster:p.img}];
+  else if(p.type==='link') p.media=[{type:'link',  href:p.link, poster:p.img, label:'Open ↗'}];
+  else                     p.media=[{type:'image', src:p.img}];
+});
+
 const gallery=document.getElementById('gallery');
-const badgeFor=t=>t==='video'?'▶':t==='link'?'↗':'⤢';
+const iconFor=t=>t==='video'?'▶':t==='link'?'↗':'⤢';
+/* stacked-frames glyph for multi-item projects, next to the count */
+const STACK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><rect x="7" y="7" width="12" height="12" rx="1.5"/><path d="M4 15V5.5A1.5 1.5 0 0 1 5.5 4H15"/></svg>';
+function badgeHTML(p){
+  const n=p.media.length;
+  return n>1
+    ? `<span class="badge count">${STACK}${n}</span>`
+    : `<span class="badge">${iconFor(p.media[0].type)}</span>`;
+}
 gallery.innerHTML=PROJECTS.map((p,i)=>`
-  <div class="gitem ${p.tier||'std'}" data-cat="${p.cat}" data-i="${i}">
+  <div class="gitem ${p.tier||'std'}" data-cat="${p.cat}" data-i="${i}" role="button" tabindex="0" aria-label="Open ${p.title}">
     <img src="${p.img}" alt="${p.title}" loading="lazy">
-    <span class="badge">${badgeFor(p.type)}</span>
+    ${badgeHTML(p)}
     <div class="ov">
       <span class="t">${p.tag}</span>
       <h4>${p.title}</h4>
@@ -216,27 +471,46 @@ document.getElementById('filters').addEventListener('click',e=>{
 
 const lb=document.getElementById('lb'),lbMedia=document.getElementById('lbMedia'),
   lbTag=document.getElementById('lbTag'),lbTitle=document.getElementById('lbTitle');
-let curList=[],curIdx=0;
+/* per-project position counter, e.g. "2 / 4" */
+const lbCount=document.createElement('div');lbCount.className='lb-count';lbCount.id='lbCount';
+document.querySelector('.lb-inner').appendChild(lbCount);
+
+/* curList is now ONE project's media array; curIdx walks within it and loops */
+let curList=[],curIdx=0,curProject=null;
 function openLB(i){
-  const p=PROJECTS[i];
-  if(p.type==='link'){window.open(p.link,'_blank','noopener');return;}
-  curList=PROJECTS.map((x,idx)=>({x,idx})).filter(o=>{
-    const el=document.querySelector('.gitem[data-i="'+o.idx+'"]');
-    return o.x.type!=='link' && el && !el.classList.contains('hide');
-  });
-  curIdx=curList.findIndex(o=>o.idx===i);
-  renderLB();lb.classList.add('open');document.body.style.overflow='hidden';
+  curProject=PROJECTS[i];
+  curList=curProject.media;
+  if(curList.length===1 && curList[0].type==='link'){
+    window.open(curList[0].href,'_blank','noopener');
+    return;
+  }
+  curIdx=0;
+  lb.classList.toggle('single',curList.length<2);
+  renderLB();
+  lb.classList.add('open');
+  document.body.style.overflow='hidden';
 }
 function renderLB(){
-  const p=curList[curIdx].x;
-  lbMedia.innerHTML=p.type==='video'
-    ? `<video src="${p.src}" controls autoplay playsinline></video>`
-    : `<img src="${p.img}" alt="${p.title}">`;
-  lbTag.textContent=p.tag;lbTitle.textContent=p.title;
+  const m=curList[curIdx];
+  if(m.type==='video'){
+    lbMedia.innerHTML=`<video src="${m.src}"${m.poster?` poster="${m.poster}"`:''} controls autoplay playsinline></video>`;
+  }else if(m.type==='link'){
+    lbMedia.innerHTML=`<span class="lb-linkslide">
+        <img src="${m.poster||curProject.img}" alt="${curProject.title}">
+        <a class="lb-open" href="${m.href}" target="_blank" rel="noopener">${m.label||'Open ↗'}</a>
+      </span>`;
+  }else{
+    lbMedia.innerHTML=`<img src="${m.src}" alt="${curProject.title}">`;
+  }
+  lbTag.textContent=curProject.tag;
+  lbTitle.textContent=curProject.title;
+  lbCount.innerHTML=curList.length>1?`<b>${curIdx+1}</b> / ${curList.length}`:'';
 }
 function closeLB(){lb.classList.remove('open');lbMedia.innerHTML='';document.body.style.overflow=''}
-function step(d){if(!curList.length)return;curIdx=(curIdx+d+curList.length)%curList.length;renderLB()}
+/* loop within the project — last → next wraps back to first */
+function step(d){if(curList.length<2)return;curIdx=(curIdx+d+curList.length)%curList.length;renderLB()}
 gallery.addEventListener('click',e=>{const g=e.target.closest('.gitem');if(g)openLB(+g.dataset.i)});
+gallery.addEventListener('keydown',e=>{const g=e.target.closest('.gitem');if(!g)return;if(e.key==='Enter'||e.key===' '){e.preventDefault();openLB(+g.dataset.i)}});
 document.getElementById('lbClose').onclick=closeLB;
 document.getElementById('lbPrev').onclick=e=>{e.stopPropagation();step(-1)};
 document.getElementById('lbNext').onclick=e=>{e.stopPropagation();step(1)};
